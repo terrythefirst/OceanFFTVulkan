@@ -1,0 +1,60 @@
+#version 430 core
+
+layout (local_size_x = 1, local_size_y = 1) in;
+
+layout( std140, binding=0 ) buffer dataFrom1{ //原始顶点数据缓冲
+	vec4 dyStore[ ]; //原始顶点数据数组
+};
+
+layout( std140, binding=1 ) buffer dataFrom2{ //原始顶点数据缓冲
+	vec4 dxStore[ ]; //原始顶点数据数组
+};
+
+layout( std140, binding=2 ) buffer dataFrom3{ //原始顶点数据缓冲
+	vec4 dzStore[ ]; //原始顶点数据数组
+};
+
+struct myVert{ //用于表示顶点数据的结构体
+	vec4 a; //前四个分量
+	vec4 b; //后四个分量
+};
+layout( std140, binding=3 ) buffer dataFrom{ //原始顶点数据缓冲
+	myVert vertsFrom[ ]; //原始顶点数据数组
+};
+layout( std140, binding=4 ) buffer dataTo{ //结果顶点数据缓冲
+	myVert vertsTo[ ]; //结果顶点数据数组
+};
+
+layout (push_constant) uniform pushConstants{
+	float N;
+	float heightScale;
+	float choppiness;
+} constants;
+
+void main(void){
+	ivec2 x = ivec2(gl_WorkGroupID.xy);
+	float perms[] = {1.0,-1.0};
+	int index = int(mod((int(x.x + x.y)),2));
+	float perm = perms[index];
+
+	uint indexTemp=gl_NumWorkGroups.x*gl_WorkGroupID.y+gl_WorkGroupID.x; //计算顶点的索引
+    vec3 positionTemp=vertsFrom[indexTemp].a.xyz; //取出顶点位置
+    vec2 texCoorTemp=vec2(vertsFrom[indexTemp].a.w,vertsFrom[indexTemp].b.x);//取出顶点纹理坐标
+    vec3 normalTemp=vertsFrom[indexTemp].b.yzw; //取出顶点的法向量
+	float dy = dyStore[indexTemp].r;
+	dy = perm*(dy/float(constants.N*constants.N));
+	float dx = dxStore[indexTemp].r;
+	dx = perm*(dx/float(constants.N*constants.N));
+	float dz = dzStore[indexTemp].r;
+	dz = perm*(dz/float(constants.N*constants.N));
+
+	positionTemp.y = positionTemp.y + dy*constants.heightScale;
+	positionTemp.x = positionTemp.x - dx*constants.choppiness;
+	positionTemp.z = positionTemp.z - dz*constants.choppiness;
+
+	vertsTo[indexTemp].a.xyz = positionTemp; //传出顶点位置
+	vertsTo[indexTemp].a.w = texCoorTemp.s; //传出顶点纹理坐标S
+	vertsTo[indexTemp].b.x = texCoorTemp.t; //传出顶点纹理坐标T
+	vertsTo[indexTemp].b.yzw = normalTemp.xyz; //传出顶点法向量
+}
+

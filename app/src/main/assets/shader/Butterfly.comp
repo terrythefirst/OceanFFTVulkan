@@ -1,0 +1,135 @@
+#version 430 core
+#define M_PI 3.1415926535897932384626433832795
+
+layout (local_size_x = 1, local_size_y = 1) in;
+
+layout( std140, binding=0 )  readonly buffer dataFrom1{ //原始顶点数据缓冲
+	vec4 twiddlesIndices[ ]; //原始顶点数据数组
+};
+
+layout( std140, binding=1 )  buffer dataFrom2{ //原始顶点数据缓冲
+	vec4 pingpong0[ ]; //原始顶点数据数组
+};
+
+layout( std140, binding=2 )  buffer dataFrom3{ //原始顶点数据缓冲
+	vec4 pingpong1[ ]; //原始顶点数据数组
+};
+
+layout(binding = 3, set = 0) uniform UniformBufferObject {
+	int log_2_n;
+} ubo;
+
+layout (push_constant, std430, row_major) uniform pushConstants{
+	int stage;
+	int pingpong;
+	int direction;
+} constants;
+
+struct complex
+{	
+	float real;
+	float im;
+};
+
+complex mul(complex c0, complex c1)
+{
+	complex c;
+	c.real = c0.real * c1.real - c0.im * c1.im;
+	c.im   = c0.real * c1.im + c0.im * c1.real;
+	return c;
+}
+
+complex add(complex c0, complex c1)
+{
+	complex c;
+	c.real = c0.real + c1.real;
+	c.im   = c0.im   + c1.im;
+	return c;
+}
+
+
+void horizontalButterflies()
+{
+	complex H;
+	ivec2 x = ivec2(gl_WorkGroupID.xy);
+	uint index = gl_NumWorkGroups.x*gl_WorkGroupID.y+gl_WorkGroupID.x;
+	if(constants.pingpong == 0)
+	{
+		vec4 data = twiddlesIndices[constants.stage+x.x*ubo.log_2_n];
+		vec2 p_ = pingpong0[int(data.z + x.y*gl_NumWorkGroups.x)].rg;
+		vec2 q_ = pingpong0[int(data.w + x.y*gl_NumWorkGroups.x)].rg;
+		vec2 w_ = vec2(data.x, data.y);
+		
+		complex p = complex(p_.x,p_.y);
+		complex q = complex(q_.x,q_.y);
+		complex w = complex(w_.x,w_.y);
+		
+		//Butterfly operation
+		H = add(p,mul(w,q));
+		
+		pingpong1[index] = vec4(H.real, H.im,0,0);
+	}
+	else if(constants.pingpong == 1)
+	{
+		vec4 data = twiddlesIndices[constants.stage+x.x*ubo.log_2_n];
+		vec2 p_ = pingpong1[int(data.z+x.y*gl_NumWorkGroups.x)].rg;
+		vec2 q_ = pingpong1[int(data.w+x.y*gl_NumWorkGroups.x)].rg;
+		vec2 w_ = vec2(data.x, data.y);
+		
+		complex p = complex(p_.x,p_.y);
+		complex q = complex(q_.x,q_.y);
+		complex w = complex(w_.x,w_.y);
+		
+		//Butterfly operation
+		H = add(p,mul(w,q));
+		
+		pingpong0[index] = vec4(H.real, H.im,0,0);
+	}
+}
+
+void verticalButterflies()
+{
+	complex H;
+	ivec2 x = ivec2(gl_WorkGroupID.xy);
+	uint index = gl_NumWorkGroups.x*gl_WorkGroupID.y+gl_WorkGroupID.x;
+	if(constants.pingpong == 0)
+	{
+		vec4 data = twiddlesIndices[constants.stage+x.y*ubo.log_2_n];
+		vec2 p_ = pingpong0[int(x.x+data.z*gl_NumWorkGroups.x)].rg;
+		vec2 q_ = pingpong0[int(x.x+data.w*gl_NumWorkGroups.x)].rg;
+		vec2 w_ = vec2(data.x, data.y);
+		
+		complex p = complex(p_.x,p_.y);
+		complex q = complex(q_.x,q_.y);
+		complex w = complex(w_.x,w_.y);
+		
+		//Butterfly operation
+		H = add(p,mul(w,q));
+		
+		pingpong1[index] = vec4(H.real, H.im,0,0);
+	}
+	else if(constants.pingpong == 1)
+	{
+		vec4 data = twiddlesIndices[constants.stage+x.y*ubo.log_2_n];
+		vec2 p_ = pingpong1[int(x.x+data.z*gl_NumWorkGroups.x)].rg;
+		vec2 q_ = pingpong1[int(x.x+data.w*gl_NumWorkGroups.x)].rg;
+		vec2 w_ = vec2(data.x, data.y);
+		
+		complex p = complex(p_.x,p_.y);
+		complex q = complex(q_.x,q_.y);
+		complex w = complex(w_.x,w_.y);
+		
+		//Butterfly operation
+		H = add(p,mul(w,q));
+		
+		pingpong0[index] =  vec4(H.real, H.im,0,0);
+	}
+}
+
+void main(void)
+{
+	if(constants.direction == 0)
+		horizontalButterflies();
+	else if(constants.direction == 1)
+		verticalButterflies();
+}
