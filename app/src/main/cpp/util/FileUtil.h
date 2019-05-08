@@ -1,11 +1,9 @@
 #ifndef __FileUtil_H__
 #define __FileUtil_H__
-
 #include "android/asset_manager.h"
 #include "android/asset_manager_jni.h"
 #include <string>
 #include "TexDataObject.h"
-
 using namespace std;
 class FileUtil
 {
@@ -15,5 +13,4 @@ class FileUtil
 	static string loadAssetStr(string fname);
 	static TexDataObject* loadCommonTexData(string fname);
 };
-
 #endif

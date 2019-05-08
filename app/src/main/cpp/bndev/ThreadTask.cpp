@@ -1,7 +1,6 @@
 #include "ThreadTask.h"
 #include "MyVulkanManager.h"
 #include "ShaderQueueSuit_SingleTexLight.h"
-
 void ThreadTask::doTask()
 {
     MyVulkanManager::init_vulkan_instance();
@@ -20,7 +19,6 @@ void ThreadTask::doTask()
     MyVulkanManager::createFence();
     MyVulkanManager::initPresentInfo();
     MyVulkanManager::initMatrixAndLight();
-
     MyVulkanManager::drawObject();
     MyVulkanManager::destroyFence();
     MyVulkanManager::destroyPipeline();
@@ -35,12 +33,9 @@ void ThreadTask::doTask()
     MyVulkanManager::destroy_vulkan_devices();
     MyVulkanManager::destroy_vulkan_instance();
 }
-
 ThreadTask::ThreadTask()
 {
-
 }
 ThreadTask:: ~ThreadTask()
 {
-
 }

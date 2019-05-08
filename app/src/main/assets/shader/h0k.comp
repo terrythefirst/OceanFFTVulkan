@@ -3,10 +3,10 @@
 #extension GL_ARB_shading_language_420pack : enable
 #define M_PI 3.1415926535897932384626433832795
 
-layout (local_size_x = 1, local_size_y = 1) in;
+layout (local_size_x = 1, local_size_y = 1) in;//输入布局限定符
 
-layout( std140, binding=0 )  writeonly buffer dataFrom{ //原始顶点数据缓冲
-	vec4 tilde_h0kh0minusk[]; //h0k数据数组
+layout( std140, binding=0 )  writeonly buffer dataBuffer{
+	vec4 tilde_h0kh0minusk[]; //h0(k)与 h0(-k)数据数组
 };
 
 layout (binding = 1, rgba8) uniform image2D noise_r0;//噪声纹理0
@@ -14,55 +14,54 @@ layout (binding = 2, rgba8) uniform image2D noise_i0;//噪声纹理1
 layout (binding = 3, rgba8) uniform image2D noise_r1;//噪声纹理2
 layout (binding = 4, rgba8) uniform image2D noise_i1;//噪声纹理3
 
-layout (push_constant) uniform pushConstants{
-	float N;
-	float L;
-	float amplitude;
-	float windspeed;
-	vec2 w;
-	float capillarSupressFactor;
+layout (push_constant) uniform pushConstants{//推送常量
+	float N;//FFT 的尺寸
+	float L;//fftL 常量
+	float amplitude;//振幅常量
+	float windspeed;//风速
+	vec2 w;//风向向量
+	float capillarSupressFactor;//cap 常量
 } constants;
 
-const float g = 9.81;
+const float g = 9.81;//引力常量
 
 // 利用Box-Muller变换生成正态分布的随机数
-vec4 gaussRND(){	
-	ivec2 uv = ivec2(gl_WorkGroupID.xy);
-	
-	float noise00 = clamp(imageLoad(noise_r0, uv).r, 0.001, 1.0);
-	float noise01 = clamp(imageLoad(noise_i0, uv).r, 0.001, 1.0);
-	float noise02 = clamp(imageLoad(noise_r1, uv).r, 0.001, 1.0);
-	float noise03 = clamp(imageLoad(noise_i1, uv).r, 0.001, 1.0);
-	
-	float u0 = 2.0*M_PI*noise00;
-	float v0 = sqrt(-2.0 * log(noise01));
-	float u1 = 2.0*M_PI*noise02;
-	float v1 = sqrt(-2.0 * log(noise03));
-	
-	vec4 rnd = vec4(v0 * cos(u0), v0 * sin(u0), v1 * cos(u1), v1 * sin(u1));
-	return rnd;
+vec4 gaussRND(){
+	ivec2 uv = ivec2(gl_WorkGroupID.xy);//得到在噪声纹理中的坐标
+
+	float noise00 = clamp(imageLoad(noise_r0, uv).r, 0.001, 1.0);//读入噪声 1 对应位置值，并限制范围
+	float noise01 = clamp(imageLoad(noise_i0, uv).r, 0.001, 1.0);//读入噪声 2 对应位置值，并限制范围
+	float noise02 = clamp(imageLoad(noise_r1, uv).r, 0.001, 1.0);//读入噪声 3 对应位置值，并限制范围
+	float noise03 = clamp(imageLoad(noise_i1, uv).r, 0.001, 1.0);//读入噪声 4 对应位置值，并限制范围
+
+	float u0 = 2.0*M_PI*noise00;//计算中间变量 u0
+	float v0 = sqrt(-2.0 * log(noise01));//计算中间变量 v0
+	float u1 = 2.0*M_PI*noise02;//计算中间变量 u1
+	float v1 = sqrt(-2.0 * log(noise03));//计算中间变量 v1
+
+	vec4 rnd = vec4(v0 * cos(u0), v0 * sin(u0), v1 * cos(u1), v1 * sin(u1));//得到正态随机数
+	return rnd;//返回正态随机数
 }
 
 void main(void)
-{
-	vec2 x = vec2(gl_WorkGroupID.xy) - float(constants.N)/2.0;
-	vec2 k = vec2(2.0 * M_PI * x.x/constants.L, 2.0 * M_PI * x.y/constants.L);
-	uint index = gl_NumWorkGroups.x*gl_WorkGroupID.y+gl_WorkGroupID.x;
-	float L_ = (constants.windspeed * constants.windspeed)/g;
-	float mag = length(k);
-	if (mag < 0.00001) mag = 0.00001;
-	float magSq = mag * mag;
-	
-	//sqrt(Ph(k))/sqrt(2)
-	float h0k = clamp(sqrt((constants.amplitude/(magSq*magSq)) * pow(dot(normalize(k), normalize(constants.w)), 2.0) * 
+{//主函数
+	vec2 x = vec2(gl_WorkGroupID.xy) - float(constants.N)/2.0;//根据坐标求 h0(k)方程中的 k 时的中间变量
+	vec2 k = vec2(2.0 * M_PI * x.x/constants.L, 2.0 * M_PI * x.y/constants.L);//根据公式求 k
+	uint index = gl_NumWorkGroups.x*gl_WorkGroupID.y+gl_WorkGroupID.x;//计算顶点索引
+	float L_ = (constants.windspeed * constants.windspeed)/g;//计算公式中的 L 变量
+	float mag = length(k);//求 k 的模
+	if (mag < 0.00001) mag = 0.00001;//避免计算溢出
+	float magSq = mag * mag;//求 k 的平方
+
+	//按公式计算 sqrt(Ph(k))/sqrt(2)
+	float h0k = clamp(sqrt((constants.amplitude/(magSq*magSq)) * pow(dot(normalize(k), normalize(constants.w)), 2.0) *
 				exp(-(1.0/(magSq * L_ * L_))) * exp(-magSq*pow(constants.capillarSupressFactor,2.0)))/ sqrt(2.0), -4000.0, 4000.0);
-	
-	//sqrt(Ph(-k))/sqrt(2)
-	float h0minusk = clamp(sqrt((constants.amplitude/(magSq*magSq)) * pow(dot(normalize(-k), normalize(constants.w)), 2.0) * 
+
+	//按公式计算 sqrt(Ph(-k))/sqrt(2)
+	float h0minusk = clamp(sqrt((constants.amplitude/(magSq*magSq)) * pow(dot(normalize(-k), normalize(constants.w)), 2.0) *
 					 exp(-(1.0/(magSq * L_ * L_))) * exp(-magSq*pow(constants.capillarSupressFactor,2.0)))/ sqrt(2.0), -4000.0, 4000.0);
-	
+	//产生正态分布随机数
 	vec4 gauss_random = gaussRND();
-	if(isnan(h0k))h0k=0;
-	if(isnan(h0minusk))h0minusk=0;
-	tilde_h0kh0minusk[index] = vec4(gauss_random.xy * h0k,gauss_random.zw * h0minusk);
+
+	tilde_h0kh0minusk[index] = vec4(gauss_random.xy * h0k,gauss_random.zw * h0minusk);//保存 h0(k)与 h0(-k)的计算结果
 }

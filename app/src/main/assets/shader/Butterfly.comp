@@ -1,28 +1,28 @@
 #version 430 core
-#define M_PI 3.1415926535897932384626433832795
+#define M_PI 3.1415926535897932384626433832795//定义圆周率 PI 的近似值为宏
 
-layout (local_size_x = 1, local_size_y = 1) in;
+layout (local_size_x = 1, local_size_y = 1) in;//输入布局限定符
 
-layout( std140, binding=0 )  readonly buffer dataFrom1{ //原始顶点数据缓冲
-	vec4 twiddlesIndices[ ]; //原始顶点数据数组
+layout( std140, binding=0 )  readonly buffer dataBuffer1{
+	vec4 twiddlesIndices[ ]; //扰动因子数据数组
 };
 
-layout( std140, binding=1 )  buffer dataFrom2{ //原始顶点数据缓冲
-	vec4 pingpong0[ ]; //原始顶点数据数组
+layout( std140, binding=1 )  buffer dataBuffer2{
+	vec4 pingpong0[ ]; //乒乓数据数组 0
 };
 
-layout( std140, binding=2 )  buffer dataFrom3{ //原始顶点数据缓冲
-	vec4 pingpong1[ ]; //原始顶点数据数组
+layout( std140, binding=2 )  buffer dataBuffer3{
+	vec4 pingpong1[ ]; //乒乓数据数组 1
 };
 
-layout(binding = 3, set = 0) uniform UniformBufferObject {
+layout(binding = 3, set = 0) uniform UniformBufferObject {//一致缓冲（包含总阶段数）
 	int log_2_n;
 } ubo;
 
-layout (push_constant, std430, row_major) uniform pushConstants{
-	int stage;
-	int pingpong;
-	int direction;
+layout (push_constant, std430, row_major) uniform pushConstants{//推送常量
+	int stage;//当前阶段
+	int pingpong;//乒乓存储缓冲角色
+	int direction;//蝴蝶计算的方向
 } constants;
 
 struct complex
@@ -64,7 +64,6 @@ void horizontalButterflies()
 		complex q = complex(q_.x,q_.y);
 		complex w = complex(w_.x,w_.y);
 		
-		//Butterfly operation
 		H = add(p,mul(w,q));
 		
 		pingpong1[index] = vec4(H.real, H.im,0,0);
@@ -80,33 +79,31 @@ void horizontalButterflies()
 		complex q = complex(q_.x,q_.y);
 		complex w = complex(w_.x,w_.y);
 		
-		//Butterfly operation
 		H = add(p,mul(w,q));
 		
 		pingpong0[index] = vec4(H.real, H.im,0,0);
 	}
 }
 
-void verticalButterflies()
+void verticalButterflies()//竖向蝴蝶计算的方法
 {
-	complex H;
-	ivec2 x = ivec2(gl_WorkGroupID.xy);
-	uint index = gl_NumWorkGroups.x*gl_WorkGroupID.y+gl_WorkGroupID.x;
-	if(constants.pingpong == 0)
+	complex H;//声明复数变量
+	ivec2 x = ivec2(gl_WorkGroupID.xy);//获取当前位置坐标
+	uint index = gl_NumWorkGroups.x*gl_WorkGroupID.y+gl_WorkGroupID.x;//计算索引
+	if(constants.pingpong == 0)//若当前写入乒乓缓冲 1
 	{
-		vec4 data = twiddlesIndices[constants.stage+x.y*ubo.log_2_n];
-		vec2 p_ = pingpong0[int(x.x+data.z*gl_NumWorkGroups.x)].rg;
-		vec2 q_ = pingpong0[int(x.x+data.w*gl_NumWorkGroups.x)].rg;
-		vec2 w_ = vec2(data.x, data.y);
+		vec4 data = twiddlesIndices[constants.stage+x.y*ubo.log_2_n];//读取对应的扰动因子
+		vec2 p_ = pingpong0[int(x.x+data.z*gl_NumWorkGroups.x)].rg;//通过扰动因子索引从乒乓缓
+		vec2 q_ = pingpong0[int(x.x+data.w*gl_NumWorkGroups.x)].rg;//冲数据中获取上一轮的结果
+		vec2 w_ = vec2(data.x, data.y);//扰动因子权值
 		
-		complex p = complex(p_.x,p_.y);
-		complex q = complex(q_.x,q_.y);
-		complex w = complex(w_.x,w_.y);
+		complex p = complex(p_.x,p_.y);//复数变量 p
+		complex q = complex(q_.x,q_.y);//复数变量 q
+		complex w = complex(w_.x,w_.y);//复数变量 w
 		
-		//Butterfly operation
-		H = add(p,mul(w,q));
+		H = add(p,mul(w,q));//执行蝴蝶计算
 		
-		pingpong1[index] = vec4(H.real, H.im,0,0);
+		pingpong1[index] = vec4(H.real, H.im,0,0);//保存计算结果
 	}
 	else if(constants.pingpong == 1)
 	{
@@ -119,7 +116,6 @@ void verticalButterflies()
 		complex q = complex(q_.x,q_.y);
 		complex w = complex(w_.x,w_.y);
 		
-		//Butterfly operation
 		H = add(p,mul(w,q));
 		
 		pingpong0[index] =  vec4(H.real, H.im,0,0);

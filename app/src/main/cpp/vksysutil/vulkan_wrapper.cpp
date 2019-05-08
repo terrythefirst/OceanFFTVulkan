@@ -1,17 +1,13 @@
 #include <dlfcn.h>
 #include "vulkan_wrapper.h"
-
-
 namespace vk {
     int loadVulkan(void)
     {
-        //加载Android下支持Vulkan的动态库文件libvulkan.so
         void *libvulkan = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
         if (!libvulkan)
         {
             return 0;
         }
-        //如果动态库文件加载成功，则通过dlsym函数获取各个Vulkan函数的地址
         vkCreateInstance = reinterpret_cast<PFN_vkCreateInstance>(dlsym(libvulkan, "vkCreateInstance"));
         vkDestroyInstance = reinterpret_cast<PFN_vkDestroyInstance>(dlsym(libvulkan,"vkDestroyInstance"));
         vkEnumeratePhysicalDevices = reinterpret_cast<PFN_vkEnumeratePhysicalDevices>(dlsym(libvulkan, "vkEnumeratePhysicalDevices"));
@@ -167,35 +163,29 @@ namespace vk {
         vkGetDisplayPlaneCapabilitiesKHR =reinterpret_cast<PFN_vkGetDisplayPlaneCapabilitiesKHR>(dlsym(libvulkan,"vkGetDisplayPlaneCapabilitiesKHR"));
         vkCreateDisplayPlaneSurfaceKHR =reinterpret_cast<PFN_vkCreateDisplayPlaneSurfaceKHR>(dlsym(libvulkan,"vkCreateDisplayPlaneSurfaceKHR"));
         vkCreateSharedSwapchainsKHR =reinterpret_cast<PFN_vkCreateSharedSwapchainsKHR>(dlsym(libvulkan,"vkCreateSharedSwapchainsKHR"));
-
 #ifdef VK_USE_PLATFORM_XLIB_KHR
         vkCreateXlibSurfaceKHR = reinterpret_cast<PFN_vkCreateXlibSurfaceKHR>(dlsym(libvulkan, "vkCreateXlibSurfaceKHR"));
         vkGetPhysicalDeviceXlibPresentationSupportKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR>(
             dlsym(libvulkan, "vkGetPhysicalDeviceXlibPresentationSupportKHR"));
 #endif
-
 #ifdef VK_USE_PLATFORM_XCB_KHR
         vkCreateXcbSurfaceKHR = reinterpret_cast<PFN_vkCreateXcbSurfaceKHR>(dlsym(libvulkan, "vkCreateXcbSurfaceKHR"));
         vkGetPhysicalDeviceXcbPresentationSupportKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR>(
             dlsym(libvulkan, "vkGetPhysicalDeviceXcbPresentationSupportKHR"));
 #endif
-
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
         vkCreateWaylandSurfaceKHR = reinterpret_cast<PFN_vkCreateWaylandSurfaceKHR>(dlsym(libvulkan, "vkCreateWaylandSurfaceKHR"));
         vkGetPhysicalDeviceWaylandPresentationSupportKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR>(
             dlsym(libvulkan, "vkGetPhysicalDeviceWaylandPresentationSupportKHR"));
 #endif
-
 #ifdef VK_USE_PLATFORM_MIR_KHR
         vkCreateMirSurfaceKHR = reinterpret_cast<PFN_vkCreateMirSurfaceKHR>(dlsym(libvulkan, "vkCreateMirSurfaceKHR"));
         vkGetPhysicalDeviceMirPresentationSupportKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceMirPresentationSupportKHR>(
             dlsym(libvulkan, "vkGetPhysicalDeviceMirPresentationSupportKHR"));
 #endif
-
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
         vkCreateAndroidSurfaceKHR = reinterpret_cast<PFN_vkCreateAndroidSurfaceKHR>(dlsym(libvulkan, "vkCreateAndroidSurfaceKHR"));
 #endif
-
 #ifdef VK_USE_PLATFORM_WIN32_KHR
         vkCreateWin32SurfaceKHR = reinterpret_cast<PFN_vkCreateWin32SurfaceKHR>(dlsym(libvulkan, "vkCreateWin32SurfaceKHR"));
         vkGetPhysicalDeviceWin32PresentationSupportKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR>(
@@ -206,8 +196,6 @@ namespace vk {
         vkDebugReportMessageEXT = reinterpret_cast<PFN_vkDebugReportMessageEXT>(dlsym(libvulkan,"vkDebugReportMessageEXT"));
         return 1;
     }
-
-    //声明函数地址指针
     PFN_vkCreateInstance vkCreateInstance;
     PFN_vkDestroyInstance vkDestroyInstance;
     PFN_vkEnumeratePhysicalDevices vkEnumeratePhysicalDevices;
@@ -363,31 +351,25 @@ namespace vk {
     PFN_vkGetDisplayPlaneCapabilitiesKHR vkGetDisplayPlaneCapabilitiesKHR;
     PFN_vkCreateDisplayPlaneSurfaceKHR vkCreateDisplayPlaneSurfaceKHR;
     PFN_vkCreateSharedSwapchainsKHR vkCreateSharedSwapchainsKHR;
-
 #ifdef VK_USE_PLATFORM_XLIB_KHR
     PFN_vkCreateXlibSurfaceKHR vkCreateXlibSurfaceKHR;
     PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR vkGetPhysicalDeviceXlibPresentationSupportKHR;
 #endif
-
 #ifdef VK_USE_PLATFORM_XCB_KHR
     PFN_vkCreateXcbSurfaceKHR vkCreateXcbSurfaceKHR;
     PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR vkGetPhysicalDeviceXcbPresentationSupportKHR;
 #endif
-
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
     PFN_vkCreateWaylandSurfaceKHR vkCreateWaylandSurfaceKHR;
     PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR vkGetPhysicalDeviceWaylandPresentationSupportKHR;
 #endif
-
 #ifdef VK_USE_PLATFORM_MIR_KHR
     PFN_vkCreateMirSurfaceKHR vkCreateMirSurfaceKHR;
     PFN_vkGetPhysicalDeviceMirPresentationSupportKHR vkGetPhysicalDeviceMirPresentationSupportKHR;
 #endif
-
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
     PFN_vkCreateAndroidSurfaceKHR vkCreateAndroidSurfaceKHR;
 #endif
-
 #ifdef VK_USE_PLATFORM_WIN32_KHR
     PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
     PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR vkGetPhysicalDeviceWin32PresentationSupportKHR;

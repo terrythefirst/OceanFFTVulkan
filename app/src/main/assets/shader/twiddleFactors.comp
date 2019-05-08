@@ -1,59 +1,56 @@
 #version 430 core
 #extension GL_ARB_separate_shader_objects : enable
-#define M_PI 3.1415926535897932384626433832795
+#define M_PI 3.1415926535897932384626433832795//定义圆周率 PI 的近似值为宏
 
-layout (local_size_x = 1, local_size_y = 1) in;
+layout (local_size_x = 1, local_size_y = 1) in;//输入布局限定符
 
-layout( std140, binding=0 ) writeonly buffer dataFrom1{ //原始顶点数据缓冲
-	vec4 twiddleIndices[ ]; //原始顶点数据数组
+layout( std140, binding=0 ) writeonly buffer dataBuffer1{
+	vec4 twiddleIndices[ ]; //扰动因子数据数组
 };
 
 layout (std430, binding = 1) buffer indices {
 	int j[];
-} bit_reversed;
+} bit_reversed;//辅助计算数据数组
 
 layout (push_constant) uniform pushConstants{
-	int n;
+	int n;//FFT 计算的尺寸
 } uniforms;
 
-struct complex
-{
-	float real;
-	float im;
+struct complex//定义复数结构体
+{	
+	float real;//复数实数部分
+	float im;//复数虚数部分
 };
 
 void main(void)
-{
-	vec2 x = gl_WorkGroupID.xy;
-	float k = mod(x.y * (float(uniforms.n)/ pow(2,x.x+1)), uniforms.n);
-	complex twiddle = complex( cos(2.0*M_PI*k/float(uniforms.n)), sin(2.0*M_PI*k/float(uniforms.n)));
+{//主函数
+	vec2 x = gl_WorkGroupID.xy;//获取坐标
+	float k = mod(x.y * (float(uniforms.n)/ pow(2,x.x+1)), uniforms.n);//计算扰动因子的中间变量 k
+	complex twiddle = complex( cos(2.0*M_PI*k/float(uniforms.n)), sin(2.0*M_PI*k/float(uniforms.n)));//计算扰动因子的中间复数 twiddle
+	
+	int butterflyspan = int(pow(2, x.x));//蝴蝶计算的跨度
+	
+	int butterflywing;//标识是蝴蝶计算的上半部分还是下半部分的变量
+	
+	if (mod(x.y, pow(2, x.x + 1)) < pow(2, x.x))//判断是蝴蝶计算的上半部分还是下半部分
+		butterflywing = 1;//是蝴蝶计算的上半部分
+	else butterflywing = 0;//是蝴蝶计算的下半部分
 
-	int butterflyspan = int(pow(2, x.x));
+	uint indexTemp=gl_NumWorkGroups.x*gl_WorkGroupID.y+gl_WorkGroupID.x; //计算索引
 
-	int butterflywing;
+	if (x.x == 0) {//如果是第一阶段，使用辅助数组确定扰动因子中的索引
 
-	if (mod(x.y, pow(2, x.x + 1)) < pow(2, x.x))
-		butterflywing = 1;
-	else butterflywing = 0;
-
-	uint indexTemp=gl_NumWorkGroups.x*gl_WorkGroupID.y+gl_WorkGroupID.x; //计算顶点的索引
-	// first stage, bit reversed indices
-	if (x.x == 0) {
-		// top butterfly wing
-		if (butterflywing == 1)
-			twiddleIndices[indexTemp] = vec4(twiddle.real, twiddle.im, bit_reversed.j[int(x.y)], bit_reversed.j[int(x.y + 1)]);
-		// bot butterfly wing
-		else	
-			twiddleIndices[indexTemp] = vec4(twiddle.real, twiddle.im, bit_reversed.j[int(x.y - 1)], bit_reversed.j[int(x.y)]);
+		if (butterflywing == 1)//若是蝴蝶计算的上半部分
+			twiddleIndices[indexTemp] = vec4(twiddle.real, twiddle.im, bit_reversed.j[int(x.y)], bit_reversed.j[int(x.y + 1)]);//记录对应位置的扰动因子
+		else	//若是蝴蝶计算的下半部分
+			twiddleIndices[indexTemp] = vec4(twiddle.real, twiddle.im, bit_reversed.j[int(x.y - 1)], bit_reversed.j[int(x.y)]);//记录对应位置的扰动因子
 	}
-	// second to log2(uniforms.n) stage
-	else {
-		// top butterfly wing
-		if (butterflywing == 1)
-			twiddleIndices[indexTemp] = vec4(twiddle.real, twiddle.im, x.y, x.y + butterflyspan);
-		// bot butterfly wing
-		else
-			twiddleIndices[indexTemp] = vec4(twiddle.real, twiddle.im, x.y - butterflyspan, x.y);
+	else {//如果不是第一阶段，通过蝴蝶计算的跨度与坐标确定扰动因子的索引
+
+		if (butterflywing == 1)//若是蝴蝶计算的上半部分
+			twiddleIndices[indexTemp] = vec4(twiddle.real, twiddle.im, x.y, x.y + butterflyspan);//记录对应位置的扰动因子
+		else//若是蝴蝶计算的下半部分
+			twiddleIndices[indexTemp] = vec4(twiddle.real, twiddle.im, x.y - butterflyspan, x.y);//记录对应位置的扰动因子
 	}
 }
 

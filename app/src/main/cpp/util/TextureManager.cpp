@@ -3,7 +3,6 @@
 #include "HelpFunction.h"
 #include "FileUtil.h"
 #include <assert.h>
-
 std::vector<std::string> TextureManager::texNames={
         "texture/haimian.bntex"
         ,"texture/Noise256_0.bntex"
@@ -11,17 +10,14 @@ std::vector<std::string> TextureManager::texNames={
         ,"texture/Noise256_2.bntex"
         ,"texture/Noise256_3.bntex"
 };
-
 bool TextureManager::needStaging;
 std::vector<VkSampler> TextureManager::samplerList;
 std::map<std::string,VkImage> TextureManager::textureImageList;
 std::map<std::string,VkDeviceMemory> TextureManager::textureMemoryList;
 std::map<std::string,VkImageView> TextureManager::viewTextureList;
 std::map<std::string,VkDescriptorImageInfo> TextureManager::texImageInfoList;
-
 std::map<std::string,VkImage> TextureManager::textureImageListHelp;
 std::map<std::string,VkDeviceMemory> TextureManager::textureMemoryListHelp;
-
 void TextureManager::setImageLayout(VkCommandBuffer cmd, VkImage image,
                                     VkImageAspectFlags aspectMask,
                                     VkImageLayout old_image_layout,
@@ -75,13 +71,12 @@ void TextureManager::setImageLayout(VkCommandBuffer cmd, VkImage image,
     VkPipelineStageFlags dest_stages = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
     vk::vkCmdPipelineBarrier(cmd, src_stages, dest_stages, 0, 0, NULL, 0, NULL, 1, &image_memory_barrier);
 }
-
 void TextureManager::init_COMPUTE_2D_Textures(std::string texName, VkDevice& device, VkPhysicalDevice& gpu, VkPhysicalDeviceMemoryProperties& memoryroperties, VkCommandBuffer& cmdBuffer, VkQueue& queueGraphics, VkFormat format, TexDataObject* ctdo)
 {
     VkFormatProperties formatProps;
     vk::vkGetPhysicalDeviceFormatProperties(gpu, format, &formatProps);
     bool needStaging = (!(formatProps.linearTilingFeatures &(VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT))) ? true : false;
-    printf("TextureManager %s\n", (needStaging ? "不能使用线性瓦片纹理" : "能使用线性瓦片纹理"));
+    printf("TextureManager %s\n", (needStaging ? "不能使用线�?�瓦片纹�?" : "能使用线性瓦片纹�?"));
     if (needStaging) {
         VkBuffer tempBuf;
         VkBufferCreateInfo buf_info = {};
@@ -107,7 +102,7 @@ void TextureManager::init_COMPUTE_2D_Textures(std::string texName, VkDevice& dev
         bool flag = memoryTypeFromProperties(memoryroperties, mem_reqs.memoryTypeBits, requirements_mask, &alloc_info.memoryTypeIndex);
         if (flag)
         {
-            printf("确定内存类型成功 类型索引为%d\n", alloc_info.memoryTypeIndex);
+            printf("确定内存类型成功 类型索引�?%d\n", alloc_info.memoryTypeIndex);
         }
         else
         {
@@ -136,7 +131,7 @@ void TextureManager::init_COMPUTE_2D_Textures(std::string texName, VkDevice& dev
         image_create_info.samples = VK_SAMPLE_COUNT_1_BIT;
         image_create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         image_create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        image_create_info.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        image_create_info.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;//设置为特定的图像用途
         image_create_info.queueFamilyIndexCount = 0;
         image_create_info.pQueueFamilyIndices = NULL;
         image_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -244,8 +239,6 @@ void TextureManager::init_COMPUTE_2D_Textures(std::string texName, VkDevice& dev
         memcpy(pData, ctdo->data, mem_reqs.size);
         vk::vkUnmapMemory(device, textureMemory);
     }
-
-
     VkImageViewCreateInfo view_info = {};
     view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     view_info.pNext = NULL;
@@ -301,7 +294,7 @@ void TextureManager::init_SPEC_2D_Textures(std::string texName, VkDevice& device
     VkFormatProperties formatProps;
     vk::vkGetPhysicalDeviceFormatProperties(gpu, format, &formatProps);
     bool needStaging = (!(formatProps.linearTilingFeatures &VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)) ? true : false;
-    printf("TextureManager %s\n", (needStaging ? "不能使用线性瓦片纹理" : "能使用线性瓦片纹理"));
+    printf("TextureManager %s\n", (needStaging ? "不能使用线�?�瓦片纹�?" : "能使用线性瓦片纹�?"));
     if (needStaging)
     {
         VkBuffer tempBuf;
@@ -328,7 +321,7 @@ void TextureManager::init_SPEC_2D_Textures(std::string texName, VkDevice& device
         bool flag = memoryTypeFromProperties(memoryroperties, mem_reqs.memoryTypeBits, requirements_mask, &alloc_info.memoryTypeIndex);
         if (flag)
         {
-            printf("确定内存类型成功 类型索引为%d\n", alloc_info.memoryTypeIndex);
+            printf("确定内存类型成功 类型索引�?%d\n", alloc_info.memoryTypeIndex);
         }
         else
         {
@@ -504,16 +497,12 @@ void TextureManager::initTextures(VkDevice& device, VkPhysicalDevice& gpu, VkPhy
             init_COMPUTE_2D_Textures(texNames[i], device, gpu, memoryroperties, cmdBuffer, queueGraphics, VK_FORMAT_R8G8B8A8_UNORM, ctdo);
     }
 }
-
 void TextureManager::destroyTextures(VkDevice& device)
 {
-
     for (int i = 0; i<SAMPLER_COUNT; i++)
     {
         vk::vkDestroySampler(device, samplerList[i], NULL);
     }
-
-
     for (int i = 0; i<texNames.size(); i++)
     {
         vk::vkDestroyImageView(device, viewTextureList[texNames[i]], NULL);
@@ -526,7 +515,6 @@ void TextureManager::destroyTextures(VkDevice& device)
         }
     }
 }
-
 int TextureManager::getVkDescriptorSetIndexForCommonTexLight(std::string texName)
 {
     int result = -1;
@@ -541,5 +529,3 @@ int TextureManager::getVkDescriptorSetIndexForCommonTexLight(std::string texName
     assert(result != -1);
     return result;
 }
-
-

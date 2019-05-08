@@ -1,60 +1,60 @@
 #version 430 core
 
-layout (local_size_x = 1, local_size_y = 1) in;
+layout (local_size_x = 1, local_size_y = 1) in;//输入布局限定符
 
-layout( std140, binding=0 ) buffer dataFrom1{ //原始顶点数据缓冲
-	vec4 dyStore[ ]; //原始顶点数据数组
+layout( std140, binding=0 ) buffer dataBuffer1{
+	vec4 dyimg[ ]; //高度(Y 轴)数据数组
 };
 
-layout( std140, binding=1 ) buffer dataFrom2{ //原始顶点数据缓冲
-	vec4 dxStore[ ]; //原始顶点数据数组
+layout( std140, binding=1 ) buffer dataBuffer2{
+	vec4 dximg[ ];//X 轴扰动数据数组
 };
 
-layout( std140, binding=2 ) buffer dataFrom3{ //原始顶点数据缓冲
-	vec4 dzStore[ ]; //原始顶点数据数组
+layout( std140, binding=2 ) buffer dataBuffer3{
+	vec4 dzimg[ ];//Z 轴扰动数据数组
 };
 
 struct myVert{ //用于表示顶点数据的结构体
-	vec4 a; //前四个分量
-	vec4 b; //后四个分量
+	vec4 a; 
+	vec4 b;
 };
-layout( std140, binding=3 ) buffer dataFrom{ //原始顶点数据缓冲
+layout( std140, binding=3 ) buffer dataFrom{ 
 	myVert vertsFrom[ ]; //原始顶点数据数组
 };
-layout( std140, binding=4 ) buffer dataTo{ //结果顶点数据缓冲
-	myVert vertsTo[ ]; //结果顶点数据数组
+layout( std140, binding=4 ) buffer dataTo{
+	myVert vertsTo[ ];  //结果顶点数据数组
 };
 
-layout (push_constant) uniform pushConstants{
-	float N;
-	float heightScale;
-	float choppiness;
+layout (push_constant) uniform pushConstants{//推送常量
+	float N;//FFT 计算的尺寸
+	float heightScale;//高度(Y 轴)缩放因子
+	float choppiness;//水平(X 轴、Z 轴)偏移缩放因子
 } constants;
 
-void main(void){
-	ivec2 x = ivec2(gl_WorkGroupID.xy);
-	float perms[] = {1.0,-1.0};
-	int index = int(mod((int(x.x + x.y)),2));
-	float perm = perms[index];
-
+void main(void){//主函数
+	ivec2 x = ivec2(gl_WorkGroupID.xy);//获取当前顶点坐标
+	float perms[] = {1.0,-1.0};//符号数组
+	int index = int(mod((int(x.x + x.y)),2));//确定符号的索引
+	float perm = perms[index];//保存符号变量
+	
 	uint indexTemp=gl_NumWorkGroups.x*gl_WorkGroupID.y+gl_WorkGroupID.x; //计算顶点的索引
     vec3 positionTemp=vertsFrom[indexTemp].a.xyz; //取出顶点位置
     vec2 texCoorTemp=vec2(vertsFrom[indexTemp].a.w,vertsFrom[indexTemp].b.x);//取出顶点纹理坐标
     vec3 normalTemp=vertsFrom[indexTemp].b.yzw; //取出顶点的法向量
-	float dy = dyStore[indexTemp].r;
-	dy = perm*(dy/float(constants.N*constants.N));
-	float dx = dxStore[indexTemp].r;
-	dx = perm*(dx/float(constants.N*constants.N));
-	float dz = dzStore[indexTemp].r;
-	dz = perm*(dz/float(constants.N*constants.N));
+	float dy = dyimg[indexTemp].r;//取出高度(Y 轴)计算结果
+	dy = perm*(dy/float(constants.N*constants.N));//规格化到(-1,1)区间内
+	float dx = dximg[indexTemp].r;//取出 X 轴扰动计算结果
+	dx = perm*(dx/float(constants.N*constants.N));//规格化到(-1,1)区间内
+	float dz = dzimg[indexTemp].r;//取出 Z 轴扰动计算结果
+	dz = perm*(dz/float(constants.N*constants.N));//规格化到(-1,1)区间内
 
-	positionTemp.y = positionTemp.y + dy*constants.heightScale;
-	positionTemp.x = positionTemp.x - dx*constants.choppiness;
-	positionTemp.z = positionTemp.z - dz*constants.choppiness;
-
-	vertsTo[indexTemp].a.xyz = positionTemp; //传出顶点位置
-	vertsTo[indexTemp].a.w = texCoorTemp.s; //传出顶点纹理坐标S
-	vertsTo[indexTemp].b.x = texCoorTemp.t; //传出顶点纹理坐标T
-	vertsTo[indexTemp].b.yzw = normalTemp.xyz; //传出顶点法向量
+	positionTemp.y = positionTemp.y + dy*constants.heightScale;//得到最终高度，即 Y 坐标
+	positionTemp.x = positionTemp.x - dx*constants.choppiness;//得到最终 X 轴坐标
+	positionTemp.z = positionTemp.z - dz*constants.choppiness;//得到最终 Z 轴坐标
+		
+	vertsTo[indexTemp].a.xyz=positionTemp; //传出顶点位置
+	vertsTo[indexTemp].a.w=texCoorTemp.s; //传出顶点纹理坐标S
+	vertsTo[indexTemp].b.x=texCoorTemp.t; //传出顶点纹理坐标T
+	vertsTo[indexTemp].b.yzw=normalTemp.xyz; //传出顶点法向量
 }
 

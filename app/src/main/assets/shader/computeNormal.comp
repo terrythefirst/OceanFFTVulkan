@@ -12,7 +12,7 @@ layout( local_size_x = 1, local_size_y = 1, local_size_z = 1 ) in; //输入布�
 vec3 calNormal(vec3 a,vec3 b,vec3 c){ //计算三角形面法向量的方法
 	vec3 vab=b-a; //计算a 点到b 点的向量
 	vec3 vac=c-a; //计算a 点到c 点的向量
-    return normalize(cross(vab,vac)); //返回结果法向量值
+return normalize(cross(vab,vac)); //返回结果法向量值
 }
 vec3 getSpecPosition(uint indexIn){ //获取指定编号顶点坐标的方法
 	return vertsFromTo[indexIn].a.xyz; //返回指定编号顶点的坐标

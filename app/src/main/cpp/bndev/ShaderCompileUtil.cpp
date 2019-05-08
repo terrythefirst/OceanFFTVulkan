@@ -1,13 +1,10 @@
 #include "ShaderCompileUtil.h"
 #include "mylog.h"
-
-//服务于内部使用的类型映射方法
 struct shader_type_mapping
 {
     VkShaderStageFlagBits vkshader_type;
     shaderc_shader_kind   shaderc_type;
 };
-//服务于内部使用的类型映射方法
 static const shader_type_mapping shader_map_table[] =
 {
         {
@@ -34,8 +31,6 @@ static const shader_type_mapping shader_map_table[] =
                 shaderc_glsl_compute_shader
         },
 };
-
-//内部使用的类型映射方法
 shaderc_shader_kind MapShadercType(VkShaderStageFlagBits vkShader)
 {
     for (auto shader : shader_map_table)
@@ -47,7 +42,6 @@ shaderc_shader_kind MapShadercType(VkShaderStageFlagBits vkShader)
     }
     return shaderc_glsl_infer_from_source;
 }
-
 bool GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, std::vector<unsigned int> &spirv)
 {
     shaderc::Compiler compiler;
@@ -65,6 +59,3 @@ bool GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, std
     spirv.assign(module.cbegin(), module.cend());
     return true;
 }
-
-
-

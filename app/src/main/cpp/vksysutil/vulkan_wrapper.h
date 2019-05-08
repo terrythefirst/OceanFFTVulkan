@@ -1,17 +1,10 @@
 #ifndef VULKAN_WRAPPER_H
 #define VULKAN_WRAPPER_H
-
 #define VK_NO_PROTOTYPES 1
-
 #include <vulkan/vulkan.h>
-
 namespace vk
 {
-
-    //加载Vulkan动态库，初始化各个功能函数指针值的方法
     int loadVulkan(void);
-
-    //vulkan核心功能函数声明
     extern PFN_vkCreateInstance vkCreateInstance;
     extern PFN_vkDestroyInstance vkDestroyInstance;
     extern PFN_vkEnumeratePhysicalDevices vkEnumeratePhysicalDevices;
@@ -167,45 +160,31 @@ namespace vk
     extern PFN_vkGetDisplayPlaneCapabilitiesKHR vkGetDisplayPlaneCapabilitiesKHR;
     extern PFN_vkCreateDisplayPlaneSurfaceKHR vkCreateDisplayPlaneSurfaceKHR;
     extern PFN_vkCreateSharedSwapchainsKHR vkCreateSharedSwapchainsKHR;
-
 #ifdef VK_USE_PLATFORM_XLIB_KHR
-    // VK_KHR_xlib_surface
     extern PFN_vkCreateXlibSurfaceKHR vkCreateXlibSurfaceKHR;
     extern PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR vkGetPhysicalDeviceXlibPresentationSupportKHR;
 #endif
-
 #ifdef VK_USE_PLATFORM_XCB_KHR
-    // VK_KHR_xcb_surface
     extern PFN_vkCreateXcbSurfaceKHR vkCreateXcbSurfaceKHR;
     extern PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR vkGetPhysicalDeviceXcbPresentationSupportKHR;
 #endif
-
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
-    // VK_KHR_wayland_surface
     extern PFN_vkCreateWaylandSurfaceKHR vkCreateWaylandSurfaceKHR;
     extern PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR vkGetPhysicalDeviceWaylandPresentationSupportKHR;
 #endif
-
 #ifdef VK_USE_PLATFORM_MIR_KHR
-    // VK_KHR_mir_surface
     extern PFN_vkCreateMirSurfaceKHR vkCreateMirSurfaceKHR;
     extern PFN_vkGetPhysicalDeviceMirPresentationSupportKHR vkGetPhysicalDeviceMirPresentationSupportKHR;
 #endif
-
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
     extern PFN_vkCreateAndroidSurfaceKHR vkCreateAndroidSurfaceKHR;
 #endif
-
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-    // VK_KHR_win32_surface
     extern PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
     extern PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR vkGetPhysicalDeviceWin32PresentationSupportKHR;
 #endif
-
-// VK_EXT_debug_report
     extern PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT;
     extern PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT;
     extern PFN_vkDebugReportMessageEXT vkDebugReportMessageEXT;
 }
-
-#endif  // VULKAN_WRAPPER_H
+#endif  
